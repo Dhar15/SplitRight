@@ -53,17 +53,14 @@
 - ✅ **OCR Bill Parsing**  
   Extract line items, prices, tax, and discounts from scanned or uploaded images.
 
-- ✅ **Category-Based Splitting**  
-  Tag each item with categories like `food`, `drinks`, `dessert`, etc., for smarter tax and coupon split logic.
-
 - ✅ **Group Share Assignment**  
   Users can select who's paying for what via checkboxes beside each line item.
 
 - ✅ **Discount Engine**  
-  Choose between flat, percentage, or targeted discounts per category or item.
+  Choose between flat, percentage, or custom discount and tax splits.
 
-- ✅ **Fair Service Charge Split**  
-  Tip/service charge can be split evenly or proportionally to each person’s share.
+- ✅ **Fair Charges Split**  
+  Tip/service charge and taxes can be split evenly or proportionally to each person’s share.
 
 - ✅ **History & Export**  
   Save and revisit past bills. Export as PDF with per-person breakdown, UPI links, and QR codes.
@@ -87,7 +84,7 @@
 
 ## 🛠️ How to Run Locally
 
-> Prerequisites: Node.js, npm, Expo CLI, Google Cloud Vision API key
+> Prerequisites: Node.js, npm, Google Cloud Vision API key
 
 ```bash
 # 1. Clone the repo
