@@ -41,8 +41,8 @@
 | Layer      | Tech Stack             | Purpose                                      |
 |------------|------------------------|----------------------------------------------|
 | Frontend   | React Native + Expo    | Mobile/web UI with OCR camera integration    |
-| OCR Engine | Google Cloud Vision    | Extracts text from scanned receipts  |
-| Backend    | Node.js / Python (Flask/FastAPI) | Text parsing, NLP tagging, logic processing |
+| OCR Engine | Google Cloud Vision API   | Extracts text from scanned receipts  |
+| Backend    | Node.js  | Text parsing, NLP tagging, logic processing |
 | Storage    | Firebase      | Stores bills, users, split metadata          |
 | Export     | HTML → PDF generator + QR/UPI Generator | Shareable reports                     |
 
