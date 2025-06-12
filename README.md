@@ -70,6 +70,21 @@
 
 ---
 
+## 🧠 Limitations
+
+1. **Single Payer Support**  
+   - Only one person can be marked as the payer per bill. Multi-payer handling is not yet implemented.
+
+2. **Single Bill per Group**  
+   - Each group currently supports only one active bill. Additional or recurring bills per group are on the roadmap.
+
+3. **OCR Sensitivity**  
+   - OCR parsing works best with high-quality images and a clear "Item Name – Item Amount" structure. Poor lighting, blurry images, or misaligned text can lead to inaccurate item detection.
+
+> These limitations will be addressed in future updates (if i get the time).
+
+---
+
 ## 🛠️ How to Run Locally
 
 > Prerequisites: Node.js, npm, Expo CLI, Google Cloud Vision API key
