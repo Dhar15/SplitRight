@@ -115,30 +115,6 @@ export default function App() {
                 presentation: 'modal' 
               }} 
             />
-             <Stack.Screen 
-              name="BillItemsList"
-              component={BillItemsList}
-              options={{ 
-                headerShown: false,
-                presentation: 'modal' 
-              }} 
-            />
-             <Stack.Screen 
-              name="SplitConfiguration"
-              component={SplitConfiguration}
-              options={{ 
-                headerShown: false,
-                presentation: 'modal' 
-              }} 
-            />
-             <Stack.Screen 
-              name="SplitPreview"
-              component={SplitPreview}
-              options={{ 
-                headerShown: false,
-                presentation: 'modal' 
-              }} 
-            />
           </>
         ) : (
           // User is not signed in - show welcome screen

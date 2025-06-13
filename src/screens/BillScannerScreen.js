@@ -12,7 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { CameraView, CameraType, FlashMode, useCameraPermissions } from 'expo-camera';
+import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,33 +25,10 @@ const BillScannerScreen = () => {
   const navigation = useNavigation();
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState('back');
-  const [flashMode, setFlashMode] = useState('off');
   const [isProcessing, setIsProcessing] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
   const [showCamera, setShowCamera] = useState(true);
   const cameraRef = useRef(null);
-
-  // // Mock OCR function - Replace with actual OCR service
-  // const performOCR = async (imageUri) => {
-  //   // Simulate OCR processing time
-  //   await new Promise(resolve => setTimeout(resolve, 2000));
-    
-  //   // Mock OCR results - Replace with actual OCR implementation
-  //   const mockOCRResults = {
-  //     items: [
-  //       { name: 'Margherita Pizza', amount: 450.00 },
-  //       { name: 'Caesar Salad', amount: 280.00 },
-  //       { name: 'Garlic Bread', amount: 120.00 },
-  //       { name: 'Coca Cola (2x)', amount: 80.00 },
-  //     ],
-  //     subtotal: 930.00,
-  //     taxes: 83.70, // 9% tax
-  //     serviceCharges: 46.50, // 5% service charge
-  //     discounts: 0,
-  //   };
-    
-  //   return mockOCRResults;
-  // };
 
     const performOCR = async (imageUri) => {
     try {
@@ -217,10 +194,6 @@ const BillScannerScreen = () => {
     setIsProcessing(false);
   };
 
-  const toggleFlash = () => {
-    setFlashMode(current => (current === 'off' ? 'on' : 'off'));
-  };
-
   const toggleCameraFacing = () => {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
@@ -289,7 +262,6 @@ const BillScannerScreen = () => {
               ref={cameraRef}
               style={styles.camera}
               facing={facing}
-              flash={flashMode}
             >
               {/* Camera Overlay */}
               <View style={styles.cameraOverlay}>
@@ -311,7 +283,6 @@ const BillScannerScreen = () => {
           <View style={styles.controlsContainer}>
             <TouchableOpacity style={styles.galleryButton} onPress={pickImage}>
               <Text style={styles.controlIcon}>🖼️</Text>
-              <Text style={styles.controlText}>Gallery</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
@@ -319,12 +290,6 @@ const BillScannerScreen = () => {
             </TouchableOpacity>
 
             <View style={styles.cameraOptions}>
-              <TouchableOpacity style={styles.optionButton} onPress={toggleFlash}>
-                <Text style={styles.controlIcon}>
-                  {flashMode === 'off' ? '🔦' : '⚡'}
-                </Text>
-              </TouchableOpacity>
-              
               <TouchableOpacity style={styles.optionButton} onPress={toggleCameraFacing}>
                 <Text style={styles.controlIcon}>🔄</Text>
               </TouchableOpacity>
@@ -471,11 +436,6 @@ const styles = StyleSheet.create({
   controlIcon: {
     fontSize: 24,
     marginBottom: 5,
-  },
-  controlText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '500',
   },
   captureButton: {
     width: 80,

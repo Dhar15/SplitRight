@@ -25,8 +25,22 @@ const HistoryScreen = () => {
     setError(null);
     try {
       const history = await splitStore.getAllSplitHistory();
-      // Sort by latest first
-      const sortedHistory = Object.values(history).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      // Sort by latest first and remove any potential duplicates based on unique identifiers
+      const historyArray = Object.values(history);
+      
+      // Remove duplicates based on group name, bill total, and timestamp proximity
+      const uniqueHistory = historyArray.filter((item, index, array) => {
+        return !array.slice(0, index).some(existingItem => {
+          const timeDiff = Math.abs(new Date(item.timestamp) - new Date(existingItem.timestamp));
+          return (
+            item.groupData?.name === existingItem.groupData?.name &&
+            item.billData?.grandTotal === existingItem.billData?.grandTotal &&
+            timeDiff < 60000 // Within 1 minute
+          );
+        });
+      });
+      
+      const sortedHistory = uniqueHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
       setSplitHistory(sortedHistory);
     } catch (err) {
       console.error('Failed to fetch split history:', err);
@@ -133,7 +147,8 @@ const HistoryScreen = () => {
       splitConfig?.itemSelections &&
       Object.keys(splitConfig.itemSelections).length > 0 &&
       Object.values(splitConfig.itemSelections).every(sel => sel.length > 0) &&
-      splitConfig?.billPayment?.payerId && // Check for bill payer
+      // FIXED: Use billPayments array instead of billPayment object
+      item.billPayments && item.billPayments.length > 0 &&
       isSplitCalculated
     ) {
       initialStep = 3;
@@ -168,26 +183,28 @@ const HistoryScreen = () => {
     navigation.navigate(nextStep.screen, nextStep.params);
   };
 
+  // FIXED: Use consistent progress calculation logic matching SplitStore
   const getProgressPercentage = (item) => {
     let progress = 0;
-    
-    // Step 1: Group created (25%)
-    if (item.groupData && item.groupData.members && item.groupData.members.length > 0) {
+
+    // Group created (25%)
+    if (item.groupData && item.billData && item.billData.items && 
+        item.groupData.members && item.groupData.members.length > 0) {
       progress += 25;
     }
     
-    // Step 2: Items added and assigned (25%)
-    if (item.billData && item.billData.items && item.billData.items.length && item.billPayment && item.billPayment.payerId) {
+    // Bill payments assigned (25%)
+    if (Array.isArray(item.billPayments) && item.billPayments.length > 0) {
+      progress += 25;
+    }
+
+    // Split Calculated (25%)
+    if (item.isSplitCalculated === true) {
       progress += 25;
     }
     
-    // Step 3: Bill payer assigned and split calculated (25%)
-    if (item.isSplitCalculated) {
-      progress += 25;
-    }
-    
-    // Step 4: Completed/Settled (25%)
-    if (item.isCompleted) {
+    // Completed (25%)
+    if (item.isCompleted === true) {
       progress += 25;
     }
     
@@ -202,17 +219,18 @@ const HistoryScreen = () => {
     const progress = getProgressPercentage(item);
     if (progress === 0) return 'Not started';
     if (progress === 25) return 'Group created';
-    if (progress === 50) return 'Items assigned';
+    if (progress === 50) return 'Payments assigned';
     if (progress === 75) return 'Split calculated';
     return 'Ready to settle';
   };
 
-  const getBillPayerName = (item) => {
-    const payerId = item.billPayment?.payerId;
-    if (!payerId) return 'Not assigned';
-    
-    const payer = item.groupData?.members?.find(member => member.id === payerId);
-    return payer ? payer.name : 'Unknown payer';
+  const getBillPayerNames = (item) => {
+    if (!item.billPayments || item.billPayments.length === 0) return 'Not assigned';
+    const payers = item.billPayments.map(p => {
+      const member = item.groupData?.members?.find(m => m.id === p.payerId);
+      return member ? member.name : 'Unknown';
+    });
+    return payers.join(', ');
   };
 
   const renderHistoryItem = ({ item }) => {
@@ -222,7 +240,7 @@ const HistoryScreen = () => {
     const nextStep = determineNextStep(item);
     const progress = getProgressPercentage(item);
     const statusText = getStatusText(item);
-    const billPayerName = getBillPayerName(item);
+    const billPayerName = getBillPayerNames(item);
 
     return (
       <TouchableOpacity 
@@ -266,7 +284,7 @@ const HistoryScreen = () => {
           <Text style={styles.cardText}>Total Bill: ₹{totalAmount}</Text>
           <Text style={styles.cardText}>Date: {date}</Text>
           <Text style={styles.cardText}>Members: {item.groupData?.members?.length || 0}</Text>
-          <Text style={styles.cardText}>Bill Payer: {billPayerName}</Text>
+          <Text style={styles.cardText}>Bill Payer(s): {billPayerName}</Text>
           {item.splitResult?.settlements && item.splitResult.settlements.length > 0 && (
             <Text style={styles.cardText}>
               Settlements: {item.splitResult.settlements.length} transactions

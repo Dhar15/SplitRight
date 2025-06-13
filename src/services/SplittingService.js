@@ -27,8 +27,9 @@ export class SplittingService {
       tipStrategy = 'proportional', 
       discountStrategy = 'proportional', 
       taxStrategy = 'proportional',
-      customRatios = {}, // For custom split ratios
-      billPayment = {} // NEW: Complete bill payment tracking
+      customRatios = {}, 
+      // billPayment = {}
+      billPayments = [] 
     } = splitConfig;
 
     const result = {
@@ -150,7 +151,7 @@ export class SplittingService {
     }
 
     // --- Step 5: NEW - Process Complete Bill Payment ---
-    this._processBillPayment(billPayment, billData, result);
+    this._processBillPayments(billPayments, billData, result);
 
     // After member contributions are calculated (before finalAmounts):
     console.log("SplittingService: memberBaseCosts:", result.memberBaseCosts);
@@ -186,27 +187,41 @@ export class SplittingService {
     return result;
   }
 
-  // NEW: Process complete bill payment tracking
-  _processBillPayment(billPayment, billData, result) {
-    const { payerId, components } = billPayment;
+  // _processBillPayment(billPayment, billData, result) {
+  //   const { payerId, components } = billPayment;
     
-    if (!payerId) {
-      console.warn("No bill payer specified. Settlements may be inaccurate.");
-      return;
-    }
+  //   if (!payerId) {
+  //     console.warn("No bill payer specified. Settlements may be inaccurate.");
+  //     return;
+  //   }
 
-    // Calculate total bill amount
-    const totalBillAmount = billData.grandTotal || 
-      (billData.subtotal || 0) + 
-      (billData.taxes || 0) + 
-      (billData.tips || 0) + 
-      (billData.serviceCharges || 0) - 
-      (billData.discounts?.reduce((sum, d) => sum + (d.value || 0), 0) || 0);
+  //   // Calculate total bill amount
+  //   const totalBillAmount = billData.grandTotal || 
+  //     (billData.subtotal || 0) + 
+  //     (billData.taxes || 0) + 
+  //     (billData.tips || 0) + 
+  //     (billData.serviceCharges || 0) - 
+  //     (billData.discounts?.reduce((sum, d) => sum + (d.value || 0), 0) || 0);
 
-    // Credit the payer with the full bill amount
-    result.memberPayments[payerId] = totalBillAmount;
+  //   // Credit the payer with the full bill amount
+  //   result.memberPayments[payerId] = totalBillAmount;
 
-    console.log(`Bill payment processed: ${payerId} paid ₹${totalBillAmount}`);
+  //   console.log(`Bill payment processed: ${payerId} paid ₹${totalBillAmount}`);
+  // }
+
+   _processBillPayments(billPayments, billData, result) {
+    if (!Array.isArray(billPayments)) return;
+
+    billPayments.forEach(payment => {
+      const { payerId, amount } = payment;
+      if (!result.memberPayments[payerId]) {
+        result.memberPayments[payerId] = 0;
+      }
+      result.memberPayments[payerId] += amount;
+    });
+
+    const totalPaid = billPayments.reduce((sum, p) => sum + p.amount, 0);
+    console.log(`Bill payment processed: total ₹${totalPaid} across ${billPayments.length} payers.`);
   }
 
   // --- Helper Methods for Allocation ---
@@ -560,10 +575,10 @@ export class SplittingService {
       }
     });
 
-    // Check if bill payer is specified
-    if (!splitConfig.billPayment?.payerId) {
-      errors.push("No bill payer specified");
-    }
+    // // Check if bill payer is specified
+    // if (!splitConfig.billPayment?.payerId) {
+    //   errors.push("No bill payer specified");
+    // }
 
     // Check if all selected member IDs exist
     const memberIds = new Set(groupMembers.map(m => m.id));
@@ -575,9 +590,39 @@ export class SplittingService {
       });
     });
 
-    // Validate bill payment data
-    if (splitConfig.billPayment?.payerId && !memberIds.has(splitConfig.billPayment.payerId)) {
-      errors.push(`Invalid bill payer ID: ${splitConfig.billPayment.payerId}`);
+    // // Validate bill payment data
+    // if (splitConfig.billPayment?.payerId && !memberIds.has(splitConfig.billPayment.payerId)) {
+    //   errors.push(`Invalid bill payer ID: ${splitConfig.billPayment.payerId}`);
+    // }
+
+    // Validate multi-payer structure
+    if (!Array.isArray(splitConfig.billPayments) || splitConfig.billPayments.length === 0) {
+      errors.push("No bill payments specified");
+    } else {
+      let totalPaid = 0;
+      const seenPayers = new Set();
+
+      splitConfig.billPayments.forEach(payment => {
+        if (!payment.payerId || !memberIds.has(payment.payerId)) {
+          errors.push(`Invalid bill payer ID: ${payment.payerId}`);
+        } else {
+          if (seenPayers.has(payment.payerId)) {
+            errors.push(`Duplicate payer ID found: ${payment.payerId}`);
+          }
+          seenPayers.add(payment.payerId);
+        }
+
+        if (typeof payment.amount !== 'number' || payment.amount <= 0) {
+          errors.push(`Invalid payment amount by ${payment.payerId}: must be a positive number`);
+        } else {
+          totalPaid += payment.amount;
+        }
+      });
+
+      const expectedTotal = billData.grandTotal || 0;
+      if (Math.abs(totalPaid - expectedTotal) > 0.1) {
+        errors.push(`Total payments (${totalPaid.toFixed(2)}) do not match bill grand total (${expectedTotal.toFixed(2)})`);
+      }
     }
 
     // Validate custom ratios if provided

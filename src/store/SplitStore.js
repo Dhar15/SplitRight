@@ -275,7 +275,7 @@ async deleteBillsByGroup(groupId) {
    * @param {string} splitData.id - Optional existing ID
    * @param {Object} splitData.groupData - Group information
    * @param {Object} splitData.billData - Bill information
-   * @param {Object} splitData.billPayment - Bill payment information (who paid the entire bill)
+   * @param {Array} splitData.billPayments - Array of payment entries [{ payerId, amount }]
    * @param {Object} splitData.isSplitCalculated - Split Calculation information
    * @param {string} splitData.currentStep - Current step in the process
    * @param {boolean} splitData.isCompleted - Whether the split is completed
@@ -297,7 +297,8 @@ async deleteBillsByGroup(groupId) {
       id: splitId,
       groupData: splitData.groupData || null,
       billData: splitData.billData || null,
-      billPayment: splitData.billPayment || null, // Changed from paymentData to billPayment
+      // billPayment: splitData.billPayment || null, // Changed from paymentData to billPayment
+      billPayments: splitData.billPayments || [],
       isSplitCalculated: splitData.isSplitCalculated || false,
       currentStep: splitData.currentStep || this.SPLIT_STEPS.GROUP_CREATION,
       isCompleted: splitData.isCompleted || false,
@@ -337,10 +338,14 @@ async deleteBillsByGroup(groupId) {
       console.log('SplitStore: _calculateProgress - Check 1 (Group created): PASSED. Current Progress:', progress);
     }
     
-    // Items assigned and bill payment assigned (25%)
-    if (splitData.billPayment && splitData.billPayment.payerId) {
+    // // Items assigned and bill payment assigned (25%)
+    // if (splitData.billPayment && splitData.billPayment.payerId) {
+    //   progress += 25;
+    //   console.log('SplitStore: _calculateProgress - Check 2 (Bill payment assigned): PASSED. Current Progress:', progress);
+    // }
+
+    if (Array.isArray(splitData.billPayments) && splitData.billPayments.length > 0) {
       progress += 25;
-      console.log('SplitStore: _calculateProgress - Check 2 (Bill payment assigned): PASSED. Current Progress:', progress);
     }
 
     // Split Calculated (25%)
@@ -370,7 +375,8 @@ async deleteBillsByGroup(groupId) {
         ...initialData,
         groupData: initialData.groupData || null, 
         billData: initialData.billData || null,
-        billPayment: initialData.billPayment || null, // Changed from paymentData to billPayment
+        // billPayment: initialData.billPayment || null, // Changed from paymentData to billPayment
+        billPayments: initialData.billPayments || []
       };
       
       const savedSession = await this.saveSplitHistory(sessionData);
@@ -440,11 +446,16 @@ async deleteBillsByGroup(groupId) {
       }
 
       // === Deep merge for billPayment ===
-      if (updateData.billPayment) {
-        updatedSplit.billPayment = {
-          ...(existingSession.billPayment || {}), 
-          ...updateData.billPayment              
-        };
+      // if (updateData.billPayment) {
+      //   updatedSplit.billPayment = {
+      //     ...(existingSession.billPayment || {}), 
+      //     ...updateData.billPayment              
+      //   };
+      // }
+      if (updateData.billPayments) {
+        updatedSplit.billPayments = Array.isArray(updateData.billPayments)
+        ? updateData.billPayments
+        : [...(existingSession.billPayments || []), updateData.billPayments];
       }
 
       if (updateData.groupData) {
@@ -473,31 +484,43 @@ async deleteBillsByGroup(groupId) {
   /**
    * Update bill payment data for a specific split session
    */
-  async updateBillPayment(splitId, billPayment) {
-    try {
-      const updateData = {
-        billPayment: billPayment,
-        currentStep: this.SPLIT_STEPS.PAYMENT_RECORDING
-      };
+  // async updateBillPayment(splitId, billPayment) {
+  //   try {
+  //     const updateData = {
+  //       billPayment: billPayment,
+  //       currentStep: this.SPLIT_STEPS.PAYMENT_RECORDING
+  //     };
 
-      return await this.updateSplitSession(splitId, updateData);
-    } catch (error) {
-      console.error('Error updating bill payment:', error);
-      throw error;
-    }
-  }
+  //     return await this.updateSplitSession(splitId, updateData);
+  //   } catch (error) {
+  //     console.error('Error updating bill payment:', error);
+  //     throw error;
+  //   }
+  // }
+
+  async updateBillPayments(splitId, billPayments) {
+  return await this.updateSplitSession(splitId, {
+    billPayments,
+    currentStep: this.SPLIT_STEPS.PAYMENT_RECORDING
+  });
+}
 
   /**
    * Get bill payment data for a split session
    */
-  async getBillPayment(splitId) {
-    try {
-      const session = await this.getSplitSession(splitId);
-      return session ? session.billPayment : null;
-    } catch (error) {
-      console.error('Error getting bill payment data:', error);
-      return null;
-    }
+  // async getBillPayment(splitId) {
+  //   try {
+  //     const session = await this.getSplitSession(splitId);
+  //     return session ? session.billPayment : null;
+  //   } catch (error) {
+  //     console.error('Error getting bill payment data:', error);
+  //     return null;
+  //   }
+  // }
+
+  async getBillPayments(splitId) {
+    const session = await this.getSplitSession(splitId);
+    return session ? session.billPayments || [] : [];
   }
 
   /**

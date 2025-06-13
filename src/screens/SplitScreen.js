@@ -10,16 +10,17 @@ import SettlementScreen from '../components/SettlementScreen';
 import splitStore from '../store/SplitStore';
 
 const SplitScreen = ({ route, navigation }) => {
-  const { billData, groupData, historyId, initialStep: routeInitialStep, splitResult: initialSplitResult } = route.params; 
+  const { billData, groupData, historyId: routeHistoryId, initialStep: routeInitialStep, splitResult: initialSplitResult } = route.params; 
 
-  console.log('SplitScreen: Received history ID:', historyId);
+  console.log('SplitScreen: Received history ID:', routeHistoryId);
   console.log('SplitScreen: Initial Bill Data:', JSON.stringify(billData));
   console.log('SplitScreen: Initial Group Data:', JSON.stringify(groupData));
   
   const [currentStep, setCurrentStep] = useState(routeInitialStep || 1);
   const [members, setMembers] = useState(groupData?.members || []);
   const [itemSelections, setItemSelections] = useState({});
-  const [billPayment, setBillPayment] = useState(null); 
+  const [billPayments, setBillPayments] = useState([]);
+  const [historyId, setHistoryId] = useState(routeHistoryId); 
   const [splitConfig, setSplitConfig] = useState({
     tipStrategy: 'equal',
     discountStrategy: 'equal',
@@ -35,22 +36,21 @@ const SplitScreen = ({ route, navigation }) => {
   });
 
   const steps = [
-    { id: 1, title: 'Assign Bill', component: 'items' },
-    { id: 2, title: 'Configure Split', component: 'config' },
-    { id: 3, title: 'Preview Split', component: 'preview' },
-    { id: 4, title: 'Settlement', component: 'settlement' }
+    { id: 1, title: 'Assign Bill', component: 'items', icon: '📋' },
+    { id: 2, title: 'Configure Split', component: 'config', icon: '⚙️' },
+    { id: 3, title: 'Preview Split', component: 'preview', icon: '👁️' },
+    { id: 4, title: 'Settlement', component: 'settlement', icon: '💰' }
   ];
 
   const [sessionInitialized, setSessionInitialized] = useState(false);
-  const [loadingSession, setLoadingSession] = useState(true); // <--- New loading state for session initialization
-
+  const [loadingSession, setLoadingSession] = useState(true);
 
   console.log('SplitScreen: currentStep on render:', currentStep);
 
   // Initialize split session on component mount
   useEffect(() => {
     const initializeSession = async () => {
-      setLoadingSession(true); // Set loading state to true while initializing
+      setLoadingSession(true); 
       try {
         if (!historyId) { // If no historyId is passed, create a new one
           const newSession = await splitStore.createSplitSession({
@@ -68,8 +68,7 @@ const SplitScreen = ({ route, navigation }) => {
           
           if (!existingSession) {
             console.log('SplitScreen: Existing session not found, creating new one with provided ID:', historyId);
-            setLoadingSession(false);
-
+            
             const initialSession = {
               id: historyId, // Use the provided ID
               billData: { ...billData },
@@ -80,7 +79,7 @@ const SplitScreen = ({ route, navigation }) => {
                 taxStrategy: 'equal',
                 itemSelections: {}
               },
-              billPayment: null,
+              billPayments: [],
               splitResult: null,
               status: 'in_progress'
             };
@@ -100,8 +99,8 @@ const SplitScreen = ({ route, navigation }) => {
             } else if(initialSplitResult) {
               setSplitResult(initialSplitResult);
             }
-            if (existingSession.billPayment) {
-              setBillPayment(existingSession.billPayment);
+            if (existingSession.billPayments) {
+              setBillPayments(existingSession.billPayments);
             }
             setCurrentStep(routeInitialStep || existingSession.currentStep || 1); 
             console.log('Existing split session loaded:', historyId);
@@ -124,18 +123,19 @@ const SplitScreen = ({ route, navigation }) => {
   useEffect(() => {
     if (members.length > 0 && billData?.items && !sessionInitialized) { // Only set if session not initialized
       const initialSelections = {};
-      billData.items.forEach(item => {
-        initialSelections[item.id] = members.map(m => m.id);
+      billData.items.forEach((item, index) => {
+        const itemId = item.id || index;
+        initialSelections[itemId] = members.map(m => m.id);
       });
       setItemSelections(initialSelections);
     }
   }, [members, billData, sessionInitialized]);
 
-  // Persist splitResult, splitConfig, itemSelections, and billPayment when they change
+  // Persist splitResult, splitConfig, itemSelections, and billPayments when they change
   useEffect(() => {
     const persistSessionUpdates = async () => {
       if (sessionInitialized && historyId) {
-        console.log('SplitScreen: Persisting result/config/itemSelections/billPayment to session for historyId:', historyId);
+        console.log('SplitScreen: Persisting result/config/itemSelections/billPayments to session for historyId:', historyId);
         try {
           await splitStore.updateSplitSession(historyId, {
             splitResult: splitResult, // Save split result if available
@@ -147,19 +147,19 @@ const SplitScreen = ({ route, navigation }) => {
               ...billData, // Spread existing billData to maintain other properties
               assignments: itemSelections // Explicitly set assignments
             },
-            billPayment,
+            billPayments,
             updatedAt: new Date().toISOString(),
             currentStep: currentStep 
           });
-          console.log('SplitScreen: Config/itemSelections/billPayment persisted successfully.');
+          console.log('SplitScreen: Config/itemSelections/billPayments persisted successfully.');
         } catch (error) {
-          console.error('SplitScreen: Error updating split session from config/itemSelections/billPayment effect:', error);
+          console.error('SplitScreen: Error updating split session from config/itemSelections/billPayments effect:', error);
         }
       }
     };
 
     persistSessionUpdates();
-  }, [splitResult, splitConfig, itemSelections, billPayment, historyId, sessionInitialized, currentStep]);
+  }, [splitResult, splitConfig, itemSelections, billPayments, historyId, sessionInitialized, currentStep]);
 
   const handleItemSelectionChange = (itemId, selectedMembers) => {
     console.log(`SplitScreen: Updating item selection for item ${itemId} with members:`, selectedMembers);
@@ -182,15 +182,15 @@ const SplitScreen = ({ route, navigation }) => {
     });
   };
 
-  // Handle bill payment change
-  const handleBillPaymentChange = (payment) => {
-    console.log(`SplitScreen: Updating bill payment to:`, payment);
-    setBillPayment(payment);
+  // Handle bill payments change
+  const handleBillPaymentsChange = (payments) => {
+    console.log(`SplitScreen: Updating bill payments to:`, payments);
+    setBillPayments(payments);
 
     // Save bill payment data to history
     if (sessionInitialized && historyId) {
       splitStore.updateSplitSession(historyId, {
-        billPayment: payment
+        billPayments: payments
       });
     }
   };
@@ -205,23 +205,36 @@ const SplitScreen = ({ route, navigation }) => {
   const calculateSplit = async () => {
     setLoading(true);
     try {
-      const allItemsAssigned = billData.items.every(item => itemSelections[item.id] && itemSelections[item.id].length > 0);
+      const allItemsAssigned = billData.items.every((item, index) => {
+        const itemId = item.id || index;
+        return itemSelections[itemId] && itemSelections[itemId].length > 0;
+      });
+      
       if (!allItemsAssigned) {
         Alert.alert('Incomplete Assignment', 'Please assign all items to at least one member.');
         setLoading(false);
         return;
       }
 
-      // Check if bill payment is assigned
-      if (!billPayment || !billPayment.payerId) {
-        Alert.alert('Incomplete Payment Assignment', 'Please specify who paid the complete bill.');
+      if (!billPayments || billPayments.length === 0) {
+        Alert.alert('No Payments', 'Please specify who paid the bill.');
+        setLoading(false);
+        return;
+      }
+
+      // Validate that total payments don't exceed bill total by too much
+      const billTotal = billData.items.reduce((total, item) => total + (item.amount || 0), 0);
+      const totalPaid = billPayments.reduce((total, payment) => total + payment.amount, 0);
+      
+      if (totalPaid < billTotal * 0.5) { // Allow some flexibility, but not too little
+        Alert.alert('Insufficient Payments', 'The total payments seem too low compared to the bill total. Please verify the payment amounts.');
         setLoading(false);
         return;
       }
 
       const config = {
         itemSelections,
-        billPayment,
+        billPayments,
         ...splitConfig
       };
       
@@ -234,7 +247,7 @@ const SplitScreen = ({ route, navigation }) => {
       console.log("Component: Result from splittingService.calculateSplit:", result);
       setSplitResult(result);
 
-       // *** Update the split history record ***
+      // Update the split history record
       await splitStore.updateSplitSession(historyId, {
         splitResult: result,
         splitConfig: { 
@@ -245,10 +258,10 @@ const SplitScreen = ({ route, navigation }) => {
           ...billData,
           assignments: itemSelections
         },
-        billPayment,
+        billPayments,
         isSplitCalculated: true,
         updatedAt: new Date().toISOString(),
-        currentStep: splitStore.SPLIT_STEPS.SUMMARY_REVIEW // Update step to summary review
+        currentStep: 3 // Move to preview step
       });
     } catch (error) {
       Alert.alert('Error', 'Failed to calculate split. Please try again.');
@@ -264,11 +277,12 @@ const SplitScreen = ({ route, navigation }) => {
         return (
           <BillItemsList
             items={billData.items}
+            billData={billData}
             members={members}
             selections={itemSelections}
-            billPayment={billPayment}
+            billPayments={billPayments}
             onSelectionChange={handleItemSelectionChange}
-            onBillPaymentChange={handleBillPaymentChange}
+            onBillPaymentsChange={handleBillPaymentsChange}
           />
         );
       
@@ -300,7 +314,7 @@ const SplitScreen = ({ route, navigation }) => {
             groupData={{ ...groupData, members }}
             billData={billData}
             historyId={historyId}
-            billPayment={billPayment}
+            billPayments={billPayments}
             onComplete={() => navigation.navigate('Home')}
           />
         );
@@ -313,9 +327,15 @@ const SplitScreen = ({ route, navigation }) => {
   const canProceed = () => {
     switch (currentStep) {
       case 1: // Items step
-        const allItemsAssigned = billData.items.every(item => itemSelections[item.id] && itemSelections[item.id].length > 0);
-        const billPaymentAssigned = billPayment && billPayment.payerId;
-        return allItemsAssigned && billPaymentAssigned;
+        const allItemsAssigned = billData.items.every((item, index) => {
+          const itemId = item.id || index;
+          return itemSelections[itemId] && itemSelections[itemId].length > 0;
+        });
+        const totalPaid = billPayments.reduce((sum, p) => sum + p.amount, 0);
+        const grandTotal = billData.grandTotal || 0;
+        const isPaymentBalanced = Math.abs(totalPaid - grandTotal) < 0.01;
+        const hasPayments = billPayments.length > 0;
+        return allItemsAssigned && hasPayments && isPaymentBalanced;
       case 2: // Config step
         return true;
       case 3: // Preview step
@@ -333,8 +353,8 @@ const SplitScreen = ({ route, navigation }) => {
 
     if (currentStep === 2) {
       await calculateSplit(); // Wait for calculation
-      setCurrentStep(currentStep + 1); // Then move to the Preview step (Step 3)
-      console.log('SplitScreen: handleNext - setting currentStep to:', currentStep + 1);
+      setCurrentStep(3); // Then move to the Preview step (Step 3)
+      console.log('SplitScreen: handleNext - setting currentStep to: 3');
     } else if (currentStep < steps.length) {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
@@ -358,13 +378,14 @@ const SplitScreen = ({ route, navigation }) => {
     switch (currentStep) {
       case 1:
         // Check if every item has at least one member selected
-        const allItemsAssigned = billData.items.every(item => 
-          itemSelections[item.id] && itemSelections[item.id].length > 0
-        );
-        const billPaymentAssigned = billPayment && billPayment.payerId;
+        const allItemsAssigned = billData.items.every((item, index) => {
+          const itemId = item.id || index;
+          return itemSelections[itemId] && itemSelections[itemId].length > 0;
+        });
+        const hasPayments = billPayments.length > 0;
 
         if (!allItemsAssigned) return 'Please assign all items to at least one member.';
-        if (!billPaymentAssigned) return 'Please specify who paid the complete bill.';
+        if (!hasPayments) return 'Please specify who paid the bill.';
         return '';
       case 2:
         return isNextDisabled() ? 'Please resolve custom split validation issues.' : '';
@@ -373,14 +394,14 @@ const SplitScreen = ({ route, navigation }) => {
     }
   };
 
-  // Add the handleCompleteSplit function here as previously discussed
+  // Handle complete split function
   const handleCompleteSplit = async () => {
     setLoading(true);
     try {
       if (historyId) {
         const finalDataToSave = {
-          splitResult: splitResult, // Ensure final result is saved
-          billPayment: billPayment, // Add bill payment data
+          splitResult: splitResult,
+          billPayments: billPayments
         };
         console.log('SplitScreen: Calling completeSplitSession with historyId:', historyId, 'and finalData:', finalDataToSave);
         await splitStore.completeSplitSession(historyId, finalDataToSave);
@@ -398,16 +419,15 @@ const SplitScreen = ({ route, navigation }) => {
     }
   };
 
-    // <--- NEW: Conditional rendering based on loading state
+  // Conditional rendering based on loading state
   if (loadingSession) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#4CAF50" />
         <Text style={styles.loadingText}>Loading split session...</Text>
       </View>
     );
   }
-
 
   return (
     <View style={styles.container}>
@@ -465,8 +485,8 @@ const SplitScreen = ({ route, navigation }) => {
         
         {renderStepContent()}
 
-      {/* Complete Split Button */}
-      {currentStep === 4 && (
+        {/* Complete Split Button */}
+        {currentStep === 4 && (
           <TouchableOpacity
             style={[styles.completeButton , loading && styles.disabledButton]}
             onPress={handleCompleteSplit}
@@ -505,7 +525,7 @@ const SplitScreen = ({ route, navigation }) => {
               (!canProceed() || isNextDisabled()) && styles.disabledButtonText
             ]}>
               {loading ? 'Calculating...' : 
-               currentStep === 2 ? 'Calculate Split' : 'Next'} {/* Change button text based on step */}
+               currentStep === 2 ? 'Calculate Split' : 'Next'}
             </Text>
           </TouchableOpacity>
         )}
@@ -518,6 +538,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
   },
   progressContainer: {
     flexDirection: 'row',
@@ -654,7 +685,8 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center', 
-    alignSelf: 'stretch', 
+    alignSelf: 'stretch',
+    marginTop: 20,
   },
   completeButtonText: {
     color: 'white',

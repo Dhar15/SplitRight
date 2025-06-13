@@ -1,16 +1,18 @@
 // components/BillItemsList.js
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 
 const BillItemsList = ({ 
   items, 
   members, 
+  billData,
   selections, 
   onSelectionChange, 
-  billPayment,
-  onBillPaymentChange 
+  billPayments,
+  onBillPaymentsChange 
 }) => {
   const [showBillPaymentModal, setShowBillPaymentModal] = useState(false);
+  const [newPayment, setNewPayment] = useState({ payerId: '', amount: '' });
 
   const toggleMemberSelection = (itemId, memberId) => {
     const currentSelection = selections[itemId] || [];
@@ -28,139 +30,229 @@ const BillItemsList = ({
     onSelectionChange(itemId, newSelection);
   };
 
-  const handleBillPaymentSelection = (payerId) => {
-    onBillPaymentChange({
-      payerId,
-      components: {
-        subtotal: true,
-        taxes: true,
-        tips: true,
-        serviceCharges: true,
-        discounts: true
-      }
-    });
+  const addPaymentEntry = () => {
+    const amount = parseFloat(newPayment.amount);
+    if (!newPayment.payerId) {
+      Alert.alert('Missing Information', 'Please select who made the payment.');
+      return;
+    }
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert('Invalid Amount', 'Please enter a valid amount greater than 0.');
+      return;
+    }
+
+    // Check if this person already has a payment entry
+    const existingPaymentIndex = billPayments.findIndex(p => p.payerId === newPayment.payerId);
+    
+    if (existingPaymentIndex >= 0) {
+      // Update existing payment
+      const updatedPayments = [...billPayments];
+      updatedPayments[existingPaymentIndex].amount += amount;
+      onBillPaymentsChange(updatedPayments);
+    } else {
+      // Add new payment
+      onBillPaymentsChange([...billPayments, { payerId: newPayment.payerId, amount }]);
+    }
+    
+    setNewPayment({ payerId: '', amount: '' });
     setShowBillPaymentModal(false);
   };
 
-  const getBillPayerName = () => {
-    if (!billPayment?.payerId) return 'Select Bill Payer';
-    const payer = members.find(m => m.id === billPayment.payerId);
-    return payer ? payer.name : 'Unknown Payer';
+  const removePaymentEntry = (payerId) => {
+    Alert.alert(
+      'Remove Payment',
+      'Are you sure you want to remove this payment entry?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Remove', 
+          style: 'destructive',
+          onPress: () => {
+            const updated = billPayments.filter(p => p.payerId !== payerId);
+            onBillPaymentsChange(updated);
+          }
+        }
+      ]
+    );
   };
 
-  const getBillPaymentStatus = () => {
-    return billPayment?.payerId ? 'paid' : 'unpaid';
+  const getPayerName = (payerId) => {
+    const payer = members.find(m => m.id === payerId);
+    return payer ? payer.name : 'Unknown';
+  };
+
+  const getTotalPayments = () => {
+    return billPayments.reduce((total, payment) => total + payment.amount, 0);
+  };
+
+  const getBillTotal = () => {
+    const itemsTotal = items.reduce((total, item) => total + (item.amount || 0), 0);
+    // Add any additional charges if they exist in your bill structure
+    const tax = billData?.taxes || 0;
+    const tips = billData?.tips || 0;
+    const serviceCharges = billData?.serviceCharges || 0;
+    const discount = (billData?.discounts || []).reduce((sum, d) => sum + (d?.value || 0), 0);
+
+    return itemsTotal + tax + tips + serviceCharges - discount;
+  };
+
+  const getPaymentBalance = () => {
+    const totalPaid = getTotalPayments();
+    const billTotal = getBillTotal();
+    return billTotal - totalPaid;
+  };
+
+  const getBalanceColor = () => {
+    const balance = getPaymentBalance();
+    if (balance > 0) return '#FF9800'; // Orange for underpaid
+    if (balance < 0) return '#F44336'; // Red for overpaid
+    return '#4CAF50'; // Green for exact match
+  };
+
+  const getBalanceText = () => {
+    const balance = getPaymentBalance();
+    if (balance > 0) return `₹${balance.toFixed(2)} remaining`;
+    if (balance < 0) return `₹${Math.abs(balance).toFixed(2)} overpaid`;
+    return 'Fully paid ✓';
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.instruction}>
-        Select who shared each item and who paid the entire bill:
+        Select who shared each item and record who paid how much:
       </Text>
 
-      {/* Bill Payment Section */}
+      {/* Multi-payer Bill Payment Section */}
       <View style={styles.billPaymentCard}>
         <View style={styles.billPaymentHeader}>
-          <Text style={styles.billPaymentTitle}>💳 Complete Bill Payment</Text>
+          <Text style={styles.billPaymentTitle}>💳 Bill Payments</Text>
           <Text style={styles.billPaymentSubtitle}>
-            Who paid for the entire bill at the restaurant?
+            Record all payments made for this bill
           </Text>
         </View>
-        
+
+        {/* Payment Summary */}
+        <View style={styles.paymentSummary}>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Bill Total:</Text>
+            <Text style={styles.summaryValue}>₹{getBillTotal().toFixed(2)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Total Paid:</Text>
+            <Text style={styles.summaryValue}>₹{getTotalPayments().toFixed(2)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Balance:</Text>
+            <Text style={[styles.summaryValue, { color: getBalanceColor() }]}>
+              {getBalanceText()}
+            </Text>
+          </View>
+        </View>
+
+        {/* Payment Entries */}
+        {billPayments.length > 0 && (
+          <View style={styles.paymentsContainer}>
+            <Text style={styles.paymentsTitle}>Payment Records:</Text>
+            {billPayments.map((payment, index) => (
+              <View key={`${payment.payerId}-${index}`} style={styles.paymentRow}>
+                <View style={styles.paymentInfo}>
+                  <Text style={styles.paymentText}>
+                    {getPayerName(payment.payerId)}
+                  </Text>
+                  <Text style={styles.paymentAmount}>₹{payment.amount.toFixed(2)}</Text>
+                </View>
+                <TouchableOpacity 
+                  onPress={() => removePaymentEntry(payment.payerId)}
+                  style={styles.removeButton}
+                >
+                  <Text style={styles.removeText}>✖</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Add Payment Button */}
         <TouchableOpacity
-          style={[
-            styles.billPaymentButton,
-            getBillPaymentStatus() === 'paid' && styles.billPaymentButtonPaid
-          ]}
+          style={styles.addPaymentButton}
           onPress={() => setShowBillPaymentModal(true)}
         >
-          <Text style={[
-            styles.billPaymentButtonText,
-            getBillPaymentStatus() === 'paid' && styles.billPaymentButtonTextPaid
-          ]}>
-            {getBillPaymentStatus() === 'paid' ? '✅ ' : '💰 '}
-            {getBillPayerName()}
-          </Text>
+          <Text style={styles.addPaymentButtonText}>➕ Add Payment</Text>
         </TouchableOpacity>
-
-        {billPayment?.payerId && (
-          <Text style={styles.billPaymentNote}>
-            This person paid the complete bill including taxes, tips, and service charges.
-            The app will calculate who owes money to whom.
-          </Text>
-        )}
       </View>
-      
-      {/* Items Selection Section */}
+
+      {/* Items Section */}
       <Text style={styles.sectionTitle}>Item Sharing</Text>
+      <Text style={styles.sectionSubtitle}>
+        Select who shared each item to split the costs fairly
+      </Text>
+      
       {items.map((item, index) => {
         const itemKey = item.id || index;
+        const selectedCount = (selections[itemKey] || []).length;
         
         return (
           <View key={itemKey} style={styles.itemCard}>
             <View style={styles.itemHeader}>
               <View style={styles.itemInfo}>
                 <Text style={styles.itemName}>{item.name || `Item ${index + 1}`}</Text>
-                <Text style={styles.itemAmount}>₹{item.amount?.toFixed(2) || '0.00'}</Text>
-                <Text style={styles.itemCategory}>{item.category || 'Other'}</Text>
+                <Text style={styles.itemAmount}>₹{(item.amount || 0).toFixed(2)}</Text>
+                {item.category && (
+                  <Text style={styles.itemCategory}>{item.category}</Text>
+                )}
               </View>
               <TouchableOpacity
                 style={styles.selectAllButton}
                 onPress={() => toggleAllMembers(itemKey)}
               >
                 <Text style={styles.selectAllText}>
-                  {(selections[itemKey] || []).length === members.length ? 'Deselect All' : 'Select All'}
+                  {selectedCount === members.length ? 'Deselect All' : 'Select All'}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* Sharing Instructions */}
-            <Text style={styles.sharingLabel}>Who shared this item?</Text>
+            <Text style={styles.sharingLabel}>
+              Who shared this item? ({selectedCount}/{members.length} selected)
+            </Text>
+            
             <View style={styles.membersGrid}>
               {members.map(member => {
                 const isSelected = (selections[itemKey] || []).includes(member.id);
-                const isBillPayer = billPayment?.payerId === member.id;
-                
                 return (
                   <TouchableOpacity
                     key={member.id}
-                    style={[
-                      styles.memberChip,
-                      isSelected && styles.memberChipSelected,
-                      isBillPayer && styles.memberChipBillPayer
-                    ]}
+                    style={[styles.memberChip, isSelected && styles.memberChipSelected]}
                     onPress={() => toggleMemberSelection(itemKey, member.id)}
                   >
-                    <Text
-                      style={[
-                        styles.memberChipText,
-                        isSelected && styles.memberChipTextSelected,
-                        isBillPayer && styles.memberChipTextBillPayer
-                      ]}
-                    >
-                      {isBillPayer && '💳 '}{member.name}
+                    <Text style={[styles.memberChipText, isSelected && styles.memberChipTextSelected]}>
+                      {isSelected ? '✓ ' : ''}{member.name}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
             
-            {/* Split Amount Display */}
-            {(selections[itemKey] || []).length > 0 && (
+            {selectedCount > 0 && (
               <View style={styles.splitInfo}>
                 <Text style={styles.splitAmount}>
-                  ₹{((item.amount || 0) / (selections[itemKey] || []).length).toFixed(2)} per person
+                  ₹{((item.amount || 0) / selectedCount).toFixed(2)} per person
                 </Text>
                 <Text style={styles.splitNote}>
-                  Split among {(selections[itemKey] || []).length} {(selections[itemKey] || []).length === 1 ? 'person' : 'people'}
+                  Split among {selectedCount} {selectedCount === 1 ? 'person' : 'people'}
                 </Text>
+              </View>
+            )}
+
+            {selectedCount === 0 && (
+              <View style={styles.warningInfo}>
+                <Text style={styles.warningText}>⚠️ No one selected for this item</Text>
               </View>
             )}
           </View>
         );
       })}
 
-      {/* Bill Payment Selection Modal */}
+      {/* Add Payment Modal */}
       <Modal
         visible={showBillPaymentModal}
         transparent={true}
@@ -169,40 +261,61 @@ const BillItemsList = ({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              Who paid the complete bill?
-            </Text>
+            <Text style={styles.modalTitle}>Add Payment Entry</Text>
             <Text style={styles.modalSubtitle}>
-              This includes all items, taxes, tips, and service charges
+              Record who paid and how much they contributed
             </Text>
             
-            <View style={styles.payersList}>
+            <Text style={styles.modalLabel}>Who made the payment?</Text>
+            <View style={styles.membersList}>
               {members.map(member => (
                 <TouchableOpacity
                   key={member.id}
                   style={[
                     styles.payerOption,
-                    billPayment?.payerId === member.id && styles.payerOptionSelected
+                    newPayment.payerId === member.id && styles.payerOptionSelected
                   ]}
-                  onPress={() => handleBillPaymentSelection(member.id)}
+                  onPress={() => setNewPayment(prev => ({ ...prev, payerId: member.id }))}
                 >
                   <Text style={[
                     styles.payerOptionText,
-                    billPayment?.payerId === member.id && styles.payerOptionTextSelected
+                    newPayment.payerId === member.id && styles.payerOptionTextSelected
                   ]}>
-                    💳 {member.name}
-                    {billPayment?.payerId === member.id && ' ✓'}
+                    {member.name}
+                    {newPayment.payerId === member.id && ' ✓'}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
-            
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setShowBillPaymentModal(false)}
-            >
-              <Text style={styles.modalCloseButtonText}>Cancel</Text>
-            </TouchableOpacity>
+
+            <Text style={styles.modalLabel}>Amount Paid (₹)</Text>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              placeholder="Enter amount paid"
+              value={newPayment.amount}
+              onChangeText={text => setNewPayment(prev => ({ ...prev, amount: text }))}
+              autoFocus={true}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity 
+                style={styles.addButton} 
+                onPress={addPaymentEntry}
+              >
+                <Text style={styles.addButtonText}>Add Payment</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.modalCloseButton} 
+                onPress={() => {
+                  setShowBillPaymentModal(false);
+                  setNewPayment({ payerId: '', amount: '' });
+                }}
+              >
+                <Text style={styles.modalCloseButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -219,6 +332,7 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 20,
     textAlign: 'center',
+    lineHeight: 22,
   },
   
   // Bill Payment Card Styles
@@ -231,7 +345,7 @@ const styles = StyleSheet.create({
     borderColor: '#e3f2fd',
   },
   billPaymentHeader: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   billPaymentTitle: {
     fontSize: 18,
@@ -243,33 +357,81 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
-  billPaymentButton: {
-    backgroundColor: '#fff',
+
+  // Payment Summary Styles
+  paymentSummary: {
+    backgroundColor: 'white',
     borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#FF9800',
+    padding: 12,
+    marginBottom: 16,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  summaryValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+
+  // Payments Container
+  paymentsContainer: {
+    marginBottom: 16,
+  },
+  paymentsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  paymentInfo: {
+    flex: 1,
+  },
+  paymentText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  paymentAmount: {
+    fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '600',
+  },
+  removeButton: {
+    padding: 8,
+  },
+  removeText: {
+    color: '#F44336',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+
+  addPaymentButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     alignItems: 'center',
-    marginBottom: 8,
   },
-  billPaymentButtonPaid: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#E8F5E8',
-  },
-  billPaymentButtonText: {
+  addPaymentButtonText: {
     fontSize: 16,
-    color: '#FF9800',
+    color: 'white',
     fontWeight: '600',
-  },
-  billPaymentButtonTextPaid: {
-    color: '#4CAF50',
-  },
-  billPaymentNote: {
-    fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic',
-    textAlign: 'center',
   },
 
   // Section Title
@@ -277,6 +439,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#666',
     marginBottom: 16,
   },
 
@@ -357,10 +524,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#4CAF50',
     borderColor: '#4CAF50',
   },
-  memberChipBillPayer: {
-    borderColor: '#1976d2',
-    borderWidth: 2,
-  },
   memberChipText: {
     fontSize: 14,
     color: '#666',
@@ -369,25 +532,36 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
   },
-  memberChipTextBillPayer: {
-    color: '#1976d2',
-    fontWeight: '600',
-  },
 
   // Split Info Styles
   splitInfo: {
     alignItems: 'flex-end',
+    backgroundColor: '#f0f8ff',
+    borderRadius: 6,
+    padding: 8,
   },
   splitAmount: {
     fontSize: 14,
     color: '#4CAF50',
     fontWeight: '600',
-    fontStyle: 'italic',
   },
   splitNote: {
     fontSize: 12,
-    color: '#888',
+    color: '#666',
     marginTop: 2,
+  },
+
+  // Warning Info Styles
+  warningInfo: {
+    alignItems: 'center',
+    backgroundColor: '#fff3e0',
+    borderRadius: 6,
+    padding: 8,
+  },
+  warningText: {
+    fontSize: 12,
+    color: '#f57c00',
+    fontWeight: '500',
   },
 
   // Modal Styles
@@ -422,13 +596,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
   },
-  payersList: {
-    marginBottom: 20,
+  modalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  membersList: {
+    marginBottom: 16,
   },
   payerOption: {
     backgroundColor: '#f8f9fa',
     borderRadius: 8,
-    padding: 16,
+    padding: 12,
     marginBottom: 8,
     alignItems: 'center',
     borderWidth: 2,
@@ -446,6 +626,28 @@ const styles = StyleSheet.create({
   payerOptionTextSelected: {
     color: '#4CAF50',
     fontWeight: 'bold',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    gap: 12,
+  },
+  addButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
   modalCloseButton: {
     backgroundColor: '#6c757d',
