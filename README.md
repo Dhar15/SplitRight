@@ -69,13 +69,10 @@
 
 ## 🧠 Limitations
 
-1. **Single Payer Support**  
-   - Only one person can be marked as the payer per bill. Multi-payer handling is not yet implemented.
+1. **Separation of Bill amounts and other charges**  
+   - To make the logic sound and provide a differnentiated discount/tax/tip engine, the base amounts and all other charges need to be separately entered by the user.
 
-2. **Single Bill per Group**  
-   - Each group currently supports only one active bill. Additional or recurring bills per group are on the roadmap.
-
-3. **OCR Sensitivity**  
+2. **OCR Sensitivity**  
    - OCR parsing works best with high-quality images and a clear "Item Name – Item Amount" structure. Poor lighting, blurry images, or misaligned text can lead to inaccurate item detection.
 
 > These limitations will be addressed in future updates (if i get the time).
