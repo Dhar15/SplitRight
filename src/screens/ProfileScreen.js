@@ -21,6 +21,7 @@ import { updateProfile } from 'firebase/auth';
 import { splitStore } from '../store/SplitStore';
 import { PieChart, BarChart, LineChart } from 'react-native-chart-kit';
 import { signOut } from 'firebase/auth';
+import { CATEGORY_COLORS } from '../utils/categoryMap';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -152,33 +153,22 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const generateCategoryData = (historyArray) => {
-    const categories = {
-      'Food & Dining': 0,
-      'Groceries': 0,
-      'Entertainment': 0,
-      'Travel': 0,
-      'Others': 0,
-    };
-
-    historyArray.forEach(item => {
-      const amount = item.billData?.grandTotal || 0;
-      // Simple categorization based on amount ranges (you can improve this logic)
-      if (amount < 500) categories['Food & Dining'] += amount;
-      else if (amount < 1500) categories['Groceries'] += amount;
-      else if (amount < 3000) categories['Entertainment'] += amount;
-      else if (amount < 5000) categories['Travel'] += amount;
-      else categories['Others'] += amount;
+    const catTotals = {};
+    historyArray.forEach(entry => {
+      const items = entry.billData?.items || [];
+      items.forEach(item => {
+        const cat = item.category || 'others';
+        catTotals[cat] = (catTotals[cat] || 0) + (item.amount || 0);
+      });
     });
 
-    return Object.entries(categories)
-      .filter(([_, value]) => value > 0)
-      .map(([name, population], index) => ({
-        name,
-        population,
-        color: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'][index % 5],
-        legendFontColor: '#7F7F7F',
-        legendFontSize: 12,
-      }));
+    return Object.entries(catTotals).map(([name, population]) => ({
+      name,
+      population,
+      color: CATEGORY_COLORS[name] || '#999999',
+      legendFontColor: '#333',
+      legendFontSize: 12,
+    }));
   };
 
   const generateGroupData = (historyArray) => {

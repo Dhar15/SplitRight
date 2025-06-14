@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import splitStore from '../store/SplitStore'; 
+import { getCategoryFromName } from '../utils/categoryMap'; 
+import { CATEGORY_COLORS } from '../utils/categoryMap';
 
 const BillInputScreen = () => {
 const route = useRoute();
@@ -59,7 +61,7 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
       id: `ocr_item_${index}_${Date.now()}`,
       name: item.name,
       amount: item.amount,
-      category: 'food', // Default category
+      category: getCategoryFromName(item.name.trim()),
       isFromOCR: true,
     }));
 
@@ -85,7 +87,7 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
       id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name: newItem.name.trim(),
       amount: amount,
-      category: 'food', // Default category
+      category: getCategoryFromName(newItem.name.trim()),
       isFromOCR: false,
     };
 
@@ -181,6 +183,7 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
 
   const renderOCRItem = (item) => {
     const isEditing = isEditingOCRItem[item.id];
+    const categoryColor = CATEGORY_COLORS[item.category] || '#9E9E9E';
     
     return (
       <View key={item.id} style={[styles.itemCard, item.isFromOCR && styles.ocrItemCard]}>
@@ -209,7 +212,10 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
             </View>
           ) : (
             <View style={styles.itemDetails}>
-              <Text style={styles.itemName}>{item.name}</Text>
+              <View style={styles.itemNameAndCategory}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={[styles.itemsCategory, { backgroundColor: categoryColor }]}>{item.category}</Text>
+              </View>
               <Text style={styles.itemAmount}>₹{item.amount.toFixed(2)}</Text>
             </View>
           )}
@@ -276,21 +282,6 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
         {/* Items Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Items</Text>
-          
-          {/* {billItems.map((item) => (
-            <View key={item.id} style={styles.itemCard}>
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemAmount}>₹{item.amount.toFixed(2)}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => removeItem(item.id)}
-              >
-                <Text style={styles.removeButtonText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          ))} */}
 
           {billItems.map((item) => renderOCRItem(item))}
 
@@ -573,11 +564,28 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  itemNameAndCategory: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  flexWrap: 'wrap',
+  flexShrink: 1,
+},
   itemName: {
     fontSize: 16,
     color: '#333',
     fontWeight: '500',
   },
+  itemsCategory: {
+    marginLeft: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+    overflow: 'hidden',
+    textTransform: 'capitalize',
+},
   itemAmount: {
     fontSize: 16,
     color: '#4CAF50',
