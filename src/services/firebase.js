@@ -8,7 +8,6 @@ import {
   setDoc,
   getDoc,
   waitForPendingWrites,
-  enableIndexedDbPersistence,
 } from 'firebase/firestore';
 import NetInfo from '@react-native-community/netinfo';
 
@@ -29,7 +28,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // Enable offline persistence and configure Firestore
-const initializeFirestore = async () => {
+const setupFirestore = async () => {
   try {
     // Enable offline persistence for React Native
     await enableNetwork(db);
@@ -41,7 +40,7 @@ const initializeFirestore = async () => {
 };
 
 // Initialize Firestore when the module loads
-initializeFirestore();
+setupFirestore();
 
 // Network state monitoring
 let isOnline = true;
@@ -230,7 +229,7 @@ export const createUserDocument = async (user, displayName = '') => {
       if (retries > 1 && handledError.shouldRetry) {
         console.log(`⏳ Retrying in ${delay / 1000} seconds...`);
         await new Promise(resolve => setTimeout(resolve, delay));
-        return createDocWithRetry(retries - 1, Math.min(delay * 1.5, 10000));
+        return createDocWithRetry(retries - 1, Math.min(delay * 1.5, 3000));
       }
       
       throw error;

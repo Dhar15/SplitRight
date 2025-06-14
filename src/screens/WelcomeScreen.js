@@ -118,7 +118,7 @@ const WelcomeScreen = ({ navigation }) => {
       }
 
       // Force Firestore sync before starting
-      await forceFirestoreSync();
+      //await forceFirestoreSync();
       
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       console.log('✅ User created:', userCredential.user.uid);
@@ -131,6 +131,9 @@ const WelcomeScreen = ({ navigation }) => {
       });
       
       console.log('📝 Creating user document...');
+
+      await new Promise(resolve => setTimeout(resolve, 500)); // 0.5s delay
+
       // Create user document in Firestore
       const documentCreated = await createUserDocument(user, name.trim());
       
@@ -191,7 +194,7 @@ const WelcomeScreen = ({ navigation }) => {
       }
 
       // Force Firestore sync before starting
-      await forceFirestoreSync();
+      // await forceFirestoreSync();
       
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
