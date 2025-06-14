@@ -43,6 +43,7 @@ export type RootStackParamList = {
   Welcome: undefined; 
   BillScanner: undefined; 
   History: undefined;
+  Profile: undefined;
 };
 
 // This line is crucial for type inference throughout your app

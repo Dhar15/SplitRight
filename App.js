@@ -19,6 +19,7 @@ import BillItemsList from './src/components/BillItemsList';
 import SplitConfiguration from './src/components/SplitConfiguration';
 import SplitPreview from './src/components/SplitPreview';
 import BillScannerScreen from './src/screens/BillScannerScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -110,6 +111,14 @@ export default function App() {
             <Stack.Screen 
               name="GroupSetupScreen"
               component={GroupSetupScreen}
+              options={{ 
+                headerShown: false,
+                presentation: 'modal' 
+              }} 
+            />
+             <Stack.Screen 
+              name="Profile"
+              component={ProfileScreen}
               options={{ 
                 headerShown: false,
                 presentation: 'modal' 

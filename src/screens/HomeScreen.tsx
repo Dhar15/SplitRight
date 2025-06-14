@@ -10,30 +10,56 @@ import {
   TouchableOpacity,
   View,
   Alert,
-  Modal
+  Modal,
+  Image
 } from 'react-native';
 const { width, height } = Dimensions.get('window');
-import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase'; // Adjust path as needed
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { useNavigation, NavigationProp, useFocusEffect } from '@react-navigation/native';
 import { RootStackParamList, BillData, GroupData } from '../navigation/types'; 
+import { Ionicons } from '@expo/vector-icons';
 
 type SplitOption = 'scan' | 'manual';
 
-export default function HomeScreen() {
+const HomeScreen = () => {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();;
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
     const scaleAnim = useRef(new Animated.Value(0.9)).current;
     const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
     const [userName, setUserName] = useState('');
+    const [userPhoto, setUserPhoto] = useState<string | null>(null);
     const [showOptionsModal, setShowOptionsModal] = useState(false);
+    const scrollRef = useRef<ScrollView>(null);
+
+
+  // Refresh user data when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadUserData();
+    }, [])
+  );
+
+  const loadUserData = async () => {
+  const user = auth.currentUser;
+    if (user) {
+      await user.reload(); // <--- This line ensures fresh user data from Firebase
+      const updatedUser = auth.currentUser;
+      if (updatedUser) {
+        setUserName(updatedUser.displayName || 'User');
+        setUserPhoto(updatedUser.photoURL || null);
+      } else {
+        console.warn('User became null after reload');
+        setUserName('User');
+        setUserPhoto(null);
+      }
+    }
+  };
 
   useEffect(() => {
     // Check if user just signed in/up
     const user = auth.currentUser;
     if (user) {
-      setUserName(user.displayName || 'User');
       // Show welcome message for new sessions
       const timer = setTimeout(() => {
         setShowWelcomeMessage(true);
@@ -67,30 +93,12 @@ export default function HomeScreen() {
     ]).start();
   }, []);
 
-  const handleSignOut = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await signOut(auth);
-              navigation.navigate('Welcome'); 
-            } catch (error) {
-              console.log('Failed to sign out. Please try again.');
-            }
-          },
-        },
-      ]
-    );
-  };
+  const handleScrollToTop = () => {
+  scrollRef.current?.scrollTo({
+    y: 0,
+    animated: true,
+  });
+};
 
   const handleGetStarted = () => {
     setShowOptionsModal(true);
@@ -109,6 +117,10 @@ export default function HomeScreen() {
       default:
         break;
     }
+  };
+
+  const handleProfilePress = () => {
+    navigation.navigate('Profile');
   };
 
   const FeatureCard = ({ icon, title, description, delay = 0 }: {
@@ -197,8 +209,8 @@ export default function HomeScreen() {
           <View style={[styles.circle, styles.circle3]} />
         </View>
         
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          {/* Header with Sign Out Button */}
+        <ScrollView ref={scrollRef} style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          {/* Header with Profile Button */}
           <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
             <View style={styles.headerContent}>
               <View style={styles.logoContainer}>
@@ -207,8 +219,14 @@ export default function HomeScreen() {
                 </LinearGradient>
                 <Text style={styles.logoText}>SplitRight</Text>
               </View>
-              <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-                <Text style={styles.signOutText}>Sign Out</Text>
+              <TouchableOpacity style={styles.profileButton} onPress={handleProfilePress}>
+                {userPhoto ? (
+                  <Image source={{ uri: userPhoto }} style={styles.profileButtonImage} />
+                ) : (
+                  <View style={styles.profileButtonPlaceholder}>
+                    <Ionicons name="person" size={20} color="#ffffff" />
+                  </View>
+                )}
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -356,7 +374,7 @@ export default function HomeScreen() {
           {/* Bottom CTA */}
           <View style={styles.bottomCta}>
             <Text style={styles.bottomCtaTitle}>Ready to split smarter?</Text>
-            <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Home')}>
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleScrollToTop}>
               <Text style={styles.secondaryButtonText}>Try SplitRight Now</Text>
             </TouchableOpacity>
           </View>
@@ -442,6 +460,32 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#ffffff',
     letterSpacing: -0.5,
+  },
+  profileButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  profileButtonImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 22,
+  },
+  profileButtonPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 22,
   },
   signOutButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -728,3 +772,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+
+export default HomeScreen;
