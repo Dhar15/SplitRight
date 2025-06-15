@@ -43,7 +43,7 @@ const HomeScreen = () => {
   const loadUserData = async () => {
   const user = auth.currentUser;
     if (user) {
-      await user.reload(); // <--- This line ensures fresh user data from Firebase
+      await user.reload(); 
       const updatedUser = auth.currentUser;
       if (updatedUser) {
         setUserName(updatedUser.displayName || 'User');

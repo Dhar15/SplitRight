@@ -241,6 +241,7 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
                 value={item.name}
                 onChangeText={(text) => updateOCRItem(item.id, 'name', text)}
                 placeholder="Item name"
+                placeholderTextColor="#666"
               />
               <TextInput
                 style={[styles.editInput, styles.amountInput]}
@@ -248,6 +249,7 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
                 onChangeText={(text) => updateOCRItem(item.id, 'amount', text)}
                 placeholder="Amount"
                 keyboardType="numeric"
+                placeholderTextColor="#666"
               />
             </View>
           ) : (
@@ -262,15 +264,12 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
         </View>
         
         <View style={styles.itemActions}>
-          {item.isFromOCR && (
           <TouchableOpacity
             style={styles.editButton}
             onPress={() => openEditModal(item)}
           >
             <Text style={styles.editButtonText}>✏️</Text>
           </TouchableOpacity>
-          )}
-          
           <TouchableOpacity
             style={styles.removeButton}
             onPress={() => removeItem(item.id)}
@@ -356,6 +355,7 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
                 placeholder="Item name"
                 value={newItem.name}
                 onChangeText={(text) => setNewItem({ ...newItem, name: text })}
+                placeholderTextColor="#666"
               />
               <TextInput
                 style={styles.input}
@@ -363,6 +363,7 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
                 value={newItem.amount}
                 onChangeText={(text) => setNewItem({ ...newItem, amount: text })}
                 keyboardType="numeric"
+                placeholderTextColor="#666"
               />
               <View style={styles.addItemActions}>
                 <TouchableOpacity
@@ -404,6 +405,7 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
               value={taxes}
               onChangeText={setTaxes}
               keyboardType="numeric"
+              placeholderTextColor="#666"
             />
           </View>
 
@@ -415,6 +417,7 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
               value={discountAmountInput}
               onChangeText={setDiscountAmountInput}
               keyboardType="numeric"
+              placeholderTextColor="#666"
             />
           </View>
 
@@ -426,6 +429,7 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
               value={serviceCharges}
               onChangeText={setServiceCharges}
               keyboardType="numeric"
+              placeholderTextColor="#666"
             />
           </View>
         </View>
@@ -496,6 +500,7 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
                   value={editingItem?.name || ''}
                   onChangeText={(text) => setEditingItem(prev => ({ ...prev, name: text }))}
                   placeholder="Enter item name"
+                  placeholderTextColor="#666"
                 />
               </View>
 
@@ -507,6 +512,7 @@ const { ocrResults, scannedImage: routedImage } = route.params || {};
                   onChangeText={(text) => setEditingItem(prev => ({ ...prev, amount: text }))}
                   placeholder="Enter amount"
                   keyboardType="numeric"
+                  placeholderTextColor="#666"
                 />
               </View>
 

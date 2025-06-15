@@ -162,6 +162,7 @@ const SplitConfiguration = ({ config, onChange, billData, groupMembers = [], onV
                 // onChangeText={(text) => updateCustomRatio(category, member.id, text)}
                 keyboardType="numeric"
                 placeholder="0"
+                placeholderTextColor="#666"
               />
             </View>
           ))}

@@ -315,7 +315,7 @@ const WelcomeScreen = ({ navigation }) => {
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <LinearGradient
         colors={['#667eea', '#764ba2', '#f093fb']}
@@ -323,6 +323,7 @@ const WelcomeScreen = ({ navigation }) => {
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {/* Header Section */}

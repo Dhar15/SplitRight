@@ -232,6 +232,7 @@ const GroupSetupScreen = () => {
               value={groupName}
               onChangeText={handleGroupNameChange}
               maxLength={30}
+              placeholderTextColor="#666"
             />
             {selectedExistingGroup && (
               <View style={styles.existingGroupIndicator}>

@@ -6,10 +6,49 @@ export default {
     slug: "splitright",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/logo.png", 
-    android: {
-      package: "com.splitright.app"
+    icon: "./assets/logo.png",
+    userInterfaceStyle: "light",
+    newArchEnabled: true,
+    splash: {
+      image: "./assets/splash-icon.png",
+      resizeMode: "contain",
+      backgroundColor: "#ffffff"
     },
+    ios: {
+      supportsTablet: true
+    },
+    android: {
+      package: "com.splitright.app",
+      versionCode: 1,
+      compileSdkVersion: 35,
+      targetSdkVersion: 34,
+      buildToolsVersion: "35.0.0",
+      icon: "./assets/logo.png",
+      edgeToEdgeEnabled: true
+    },
+    web: {
+      favicon: "./assets/favicon.png"
+    },
+    plugins: [
+      "expo-sqlite",
+      "expo-router",
+      [
+        "expo-build-properties",
+        {
+          android: {
+            compileSdkVersion: 35,
+            targetSdkVersion: 34,
+            buildToolsVersion: "35.0.0",
+            extraMavenRepos: [
+              "https://maven.google.com" 
+            ],
+            TextRecognition_compileSdkVersion: 35,
+            TextRecognition_targetSdkVersion: 34,
+            TextRecognition_buildToolsVersion: "34.0.0"
+          }
+        }
+      ]
+    ],
     extra: {
       eas: {
         projectId: "bb99b92a-0c28-4abd-b316-588cfd489489"

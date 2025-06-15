@@ -521,6 +521,7 @@ const ProfileScreen = ({ navigation }) => {
                 onChangeText={setEditName}
                 placeholder="Enter your full name"
                 autoCapitalize="words"
+                placeholderTextColor="#666"
               />
             </View>
 

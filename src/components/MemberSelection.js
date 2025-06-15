@@ -138,6 +138,7 @@ const MemberSelection = ({
               autoFocus
               selectTextOnFocus
               placeholder="Member name"
+              placeholderTextColor="#666"
             />
           ) : (
             <Text style={styles.memberName}>{member.name}</Text>
@@ -221,6 +222,7 @@ const MemberSelection = ({
               placeholder="Enter member name"
               autoFocus
               maxLength={30}
+              placeholderTextColor="#666"
             />
 
             <View style={styles.modalActions}>
@@ -323,6 +325,7 @@ const QuickMemberSetup = ({ onMembersSet, suggestedNames = [] }) => {
             onChangeText={(text) => updateCustomName(index, text)}
             placeholder={suggestedNames[index] || `Person ${index + 1}`}
             maxLength={20}
+            placeholderTextColor="#666"
           />
         ))}
       </View>

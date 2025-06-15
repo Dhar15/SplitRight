@@ -296,6 +296,7 @@ const BillItemsList = ({
               value={newPayment.amount}
               onChangeText={text => setNewPayment(prev => ({ ...prev, amount: text }))}
               autoFocus={true}
+              placeholderTextColor="#666"
             />
 
             <View style={styles.modalButtons}>
