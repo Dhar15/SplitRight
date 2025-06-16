@@ -15,9 +15,6 @@ import SplitScreen from './src/screens/SplitScreen';
 import BillInputScreen from './src/screens/BillInputScreen';
 import GroupSetupScreen from './src/screens/GroupSetupScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
-import BillItemsList from './src/components/BillItemsList';
-import SplitConfiguration from './src/components/SplitConfiguration';
-import SplitPreview from './src/components/SplitPreview';
 import BillScannerScreen from './src/screens/BillScannerScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 
@@ -31,6 +28,7 @@ const LoadingScreen = () => (
 );
 
 export default function App() {
+
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 

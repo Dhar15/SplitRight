@@ -5,6 +5,8 @@ export default {
     name: "SplitRight",
     slug: "splitright",
     version: "1.0.0",
+    owner: "kingofthefall15",
+    scheme: "splitright", 
     orientation: "portrait",
     icon: "./assets/logo.png",
     userInterfaceStyle: "light",
@@ -19,12 +21,16 @@ export default {
     },
     android: {
       package: "com.splitright.app",
+      adaptiveIcon: {
+        foregroundImage: "./assets/logo.png", 
+        backgroundColor: "#FFFFFF"
+      },
       versionCode: 1,
       compileSdkVersion: 35,
       targetSdkVersion: 34,
       buildToolsVersion: "35.0.0",
       icon: "./assets/logo.png",
-      edgeToEdgeEnabled: true
+      edgeToEdgeEnabled: true,
     },
     web: {
       favicon: "./assets/favicon.png"

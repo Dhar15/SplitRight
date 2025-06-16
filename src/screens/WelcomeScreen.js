@@ -264,13 +264,6 @@ const WelcomeScreen = ({ navigation }) => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    Alert.alert(
-      'Coming Soon', 
-      'Google Sign-In will be available in the next update!'
-    );
-  };
-
   const handleForgotPassword = async () => {
     if (!email.trim()) {
       Alert.alert('Reset Password', 'Please enter your email address first');
@@ -455,11 +448,6 @@ const WelcomeScreen = ({ navigation }) => {
                 <Text style={styles.dividerText}>or</Text>
                 <View style={styles.dividerLine} />
               </View>
-
-              <TouchableOpacity style={styles.socialButton} onPress={handleGoogleSignIn}>
-                <Ionicons name="logo-google" size={20} color="#667eea" />
-                <Text style={styles.socialButtonText}>Continue with Google</Text>
-              </TouchableOpacity>
 
               <TouchableOpacity style={styles.switchMode} onPress={toggleAuthMode}>
                 <Text style={styles.switchModeText}>
