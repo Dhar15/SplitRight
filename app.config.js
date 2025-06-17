@@ -22,7 +22,7 @@ export default {
     android: {
       package: "com.splitright.app",
       adaptiveIcon: {
-        foregroundImage: "./assets/logo.png", 
+        foregroundImage: "./assets/logo-foreground.png", 
         backgroundColor: "#FFFFFF"
       },
       versionCode: 1,
@@ -59,7 +59,7 @@ export default {
       eas: {
         projectId: "bb99b92a-0c28-4abd-b316-588cfd489489"
       },
-      GOOGLE_API_KEY: process.env.GOOGLE_API_KEY
+      GOOGLE_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_API_KEY
     }
   }
 };
