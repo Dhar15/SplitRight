@@ -19,7 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as FileSystem from 'expo-file-system';
 import Constants from 'expo-constants';
 
-const apiKey = Constants.expoConfig.extra.GOOGLE_API_KEY;
+const apiKey = Constants.expoConfig.extra.EXPO_PUBLIC_GOOGLE_API_KEY;
 
 const BillScannerScreen = () => {
   const navigation = useNavigation();
