@@ -42,5 +42,6 @@ ios/
 
 #env files
 .env
-.eas*
+
+eas.json
 
